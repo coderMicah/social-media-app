@@ -2,11 +2,12 @@ import { useToast } from "@/components/ui/use-toast";
 import { InfiniteData, QueryFilters, useMutation, useQueryClient } from "@tanstack/react-query";
 import { submitPost } from "./action";
 import { PostsPage } from "@/lib/types";
+import { useSession } from "@/app/(main)/SessionProvider";
 
 
 export function useSubmitPostMutation() {
     const { toast } = useToast()
-
+    const { user } = useSession();
     const queryClient = useQueryClient()
     const mutation = useMutation({
         mutationFn: submitPost,
@@ -17,8 +18,17 @@ export function useSubmitPostMutation() {
             // queryClient.invalidateQueries({queryKey: ["post-feed", "for-you"]})
 
             //alternaively we can update the cache
-
-            const queryFilter: QueryFilters = { queryKey: ["post-feed", "for-you"] }
+            // make query filters include also posts with userId
+            const queryFilter = {
+                queryKey: ["post-feed"],
+                predicate(query) {
+                    return (
+                        query.queryKey.includes("for-you") ||
+                        (query.queryKey.includes("user-posts") &&
+                            query.queryKey.includes(user.id))
+                    );
+                },
+            } satisfies QueryFilters;
 
             // Cancel any outgoing refetches
             // (so they don't overwrite our optimistic update)
@@ -45,7 +55,7 @@ export function useSubmitPostMutation() {
             queryClient.invalidateQueries({
                 queryKey: queryFilter.queryKey,
                 predicate(query) {
-                    return !query.state.data
+                    return queryFilter.predicate(query) && !query.state.data;
                 },
             })
 

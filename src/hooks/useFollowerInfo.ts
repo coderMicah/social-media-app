@@ -11,10 +11,7 @@ const useFollowerInfo = (userId: string, initialState: IFollowerInfo) => {
         initialData: initialState,
         staleTime: Infinity
     })
-
-
     return query;
-
 }
 
 export default useFollowerInfo;
